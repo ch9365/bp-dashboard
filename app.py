@@ -316,6 +316,8 @@ def ai_attribution_analysis(df: pd.DataFrame, now_temp) -> list[str]:
     return insights
 
 
+@st.cache_data(ttl=600)
+def fetch_weather(lat: float, lon: float):
     url = (
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={lat}&longitude={lon}"
@@ -338,6 +340,14 @@ def weather_code_to_desc(code: int) -> str:
         81:"🌧 中陣雨",82:"⛈ 大陣雨",95:"⛈ 雷陣雨",99:"⛈ 冰雹雷雨",
     }
     return wmo.get(code, f"代碼 {code}")
+
+CITY_OPTIONS = {
+    "台北市": (25.03, 121.56),
+    "新北市": (25.01, 121.47),
+    "台中市": (24.14, 120.68),
+    "高雄市": (22.63, 120.30),
+    "台南市": (22.99, 120.20),
+}
 
 # ──────────────────────────────────────────
 #  側邊欄
@@ -374,37 +384,32 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 🌍 天氣位置設定")
-    city_options = {
-        "台北市": (25.03, 121.56),
-        "新北市": (25.01, 121.47),
-        "台中市": (24.14, 120.68),
-        "高雄市": (22.63, 120.30),
-        "台南市": (22.99, 120.20),
-    }
-    selected_city = st.selectbox("選擇城市", list(city_options.keys()))
-    lat, lon = city_options[selected_city]
+    selected_city = st.selectbox("選擇城市", list(CITY_OPTIONS.keys()))
 
     st.markdown("---")
     add_btn = st.button("➕ 新增紀錄", use_container_width=True, type="primary")
 
-    if add_btn:
-        label_text, _ = classify_bp(systolic, diastolic)
-        dt_str = datetime.combine(record_date, record_time).strftime("%m/%d %H:%M")
-        cur_weather = fetch_weather(lat, lon)
-        cur_temp, cur_humidity = "--", "--"
-        if cur_weather:
-            cur_temp     = cur_weather["current"].get("temperature_2m", "--")
-            cur_humidity = cur_weather["current"].get("relative_humidity_2m", "--")
-        row = [dt_str, systolic, diastolic, pulse, label_text, cur_temp, cur_humidity, tags_str, note]
-        if gs_ok:
-            try:
-                worksheet.append_row(row)
-                st.cache_data.clear()
-                st.success("✅ 已儲存至 Google Sheets！")
-            except Exception as e:
-                st.error(f"儲存失敗：{e}")
-        else:
-            st.error("Google Sheets 未連線，無法儲存。")
+# sidebar 結束，lat/lon 在外層定義讓整個程式都能使用
+lat, lon = CITY_OPTIONS[selected_city]
+
+if add_btn:
+    label_text, _ = classify_bp(systolic, diastolic)
+    dt_str = datetime.combine(record_date, record_time).strftime("%m/%d %H:%M")
+    cur_weather = fetch_weather(lat, lon)
+    cur_temp, cur_humidity = "--", "--"
+    if cur_weather:
+        cur_temp     = cur_weather["current"].get("temperature_2m", "--")
+        cur_humidity = cur_weather["current"].get("relative_humidity_2m", "--")
+    row = [dt_str, systolic, diastolic, pulse, label_text, cur_temp, cur_humidity, tags_str, note]
+    if gs_ok:
+        try:
+            worksheet.append_row(row)
+            st.cache_data.clear()
+            st.success("✅ 已儲存至 Google Sheets！")
+        except Exception as e:
+            st.error(f"儲存失敗：{e}")
+    else:
+        st.error("Google Sheets 未連線，無法儲存。")
 
 
 
