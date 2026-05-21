@@ -603,6 +603,10 @@ else:
 if not df_recent.empty:
     for col in ["收縮壓", "舒張壓", "心跳"]:
         df_recent[col] = pd.to_numeric(df_recent[col], errors="coerce")
+    # 補上可能缺少的欄位
+    for col in ["溫度(°C)", "濕度(%)", "生活標籤", "備註"]:
+        if col not in df_recent.columns:
+            df_recent[col] = ""
     df_recent["_dt"] = pd.to_datetime(df_recent["日期時間"], format="%m/%d %H:%M", errors="coerce")
     df_recent["_dt"] = df_recent["_dt"].apply(
         lambda x: x.replace(year=datetime.now().year) if pd.notnull(x) else x
@@ -770,6 +774,11 @@ if not df_history.empty:
         diff_pul = df_history['心跳'].iloc[-1] - df_history['心跳'].mean()
         st.metric("整體平均心跳", f"{df_history['心跳'].mean():.0f} bpm",
                   delta=f"{diff_pul:.0f}", delta_color="inverse")
+
+    # 補上可能缺少的欄位（舊紀錄沒有生活標籤等欄）
+    for col in ["溫度(°C)", "濕度(%)", "生活標籤", "備註"]:
+        if col not in df_history.columns:
+            df_history[col] = ""
 
     st.dataframe(df_history[["日期時間","收縮壓","舒張壓","心跳","狀態","溫度(°C)","濕度(%)","生活標籤","備註"]],
                  use_container_width=True, hide_index=True)
