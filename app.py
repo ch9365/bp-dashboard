@@ -224,7 +224,9 @@ with st.sidebar:
     st.markdown("## 🩺 血壓紀錄輸入")
     st.markdown("---")
     record_date = st.date_input("📅 量測日期", value=date.today())
-    current_time = datetime.now().time().replace(second=0, microsecond=0)
+    from datetime import timezone, timedelta
+    tw_tz = timezone(timedelta(hours=8))
+    current_time = datetime.now(tw_tz).time().replace(second=0, microsecond=0)
     if "record_time" not in st.session_state:
         st.session_state.record_time = current_time
     record_time = st.time_input("⏰ 量測時間", value=current_time, step=60, key="record_time")
@@ -276,8 +278,11 @@ if clear_btn:
 # ──────────────────────────────────────────
 #  主畫面
 # ──────────────────────────────────────────
+from datetime import timezone, timedelta
+TW_TZ = timezone(timedelta(hours=8))
+
 st.markdown("<h1 style='color:#40c4ff;font-family:Noto Sans TC;font-weight:700;margin-bottom:4px;'>血壓健康儀表板</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='color:#7ec8e3;font-size:0.88rem;margin-bottom:24px;'>最後更新：{datetime.now().strftime('%Y-%m-%d %H:%M')}</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='color:#7ec8e3;font-size:0.88rem;margin-bottom:24px;'>最後更新：{datetime.now(TW_TZ).strftime('%Y-%m-%d %H:%M')}</p>", unsafe_allow_html=True)
 
 label, badge_cls = classify_bp(systolic, diastolic)
 
@@ -444,7 +449,7 @@ if not df_all.empty:
     df_history = df_all.copy()
     df_history["_dt"] = pd.to_datetime(df_history["日期時間"], format="%m/%d %H:%M", errors="coerce")
     df_history["_dt"] = df_history["_dt"].apply(lambda x: x.replace(year=datetime.now().year) if pd.notnull(x) else x)
-    today = datetime.now()
+    today = datetime.now(TW_TZ)
     df_today = df_history[df_history["_dt"].dt.date == today.date()]
     week_start = today.date() - pd.Timedelta(days=today.weekday())
     df_week  = df_history[df_history["_dt"].dt.date >= week_start]
