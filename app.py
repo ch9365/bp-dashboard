@@ -224,8 +224,10 @@ with st.sidebar:
     st.markdown("## 🩺 血壓紀錄輸入")
     st.markdown("---")
     record_date = st.date_input("📅 量測日期", value=date.today())
-    now = datetime.now().time().replace(second=0, microsecond=0)
-    record_time = st.time_input("⏰ 量測時間", value=now, step=60)
+    current_time = datetime.now().time().replace(second=0, microsecond=0)
+    if "record_time" not in st.session_state:
+        st.session_state.record_time = current_time
+    record_time = st.time_input("⏰ 量測時間", value=current_time, step=60, key="record_time")
 
     st.markdown("### 血壓數值")
     st.info("💡 建議坐下休息 5 分鐘後，量 3 次取平均，結果更準確。")
